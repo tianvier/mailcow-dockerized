@@ -1,6 +1,26 @@
 version: '2.1'
 services:
-
+    mailcow-api:
+      build:
+        dockerfile: './api/Dockerfile'
+      image: mailcow-api
+      depends_on:
+        - mysql-mailcow
+      ports:
+        - "8080:8080"
+      environment:
+        - DBNAME=${DBNAME}
+        - DBUSER=${DBUSER}
+        - DBPASS=${DBPASS}
+        - DBHOST=mysql-mailcow
+        - DBPORT=13306
+        - API_TOKEN="4274B4B8329E47705C11B9E1A9967170"
+      dns:
+        - ${IPV4_NETWORK:-172.22.1}.254
+      networks:
+        mailcow-network:
+          aliases:
+            - api
     unbound-mailcow:
       image: mailcow/unbound:1.15
       environment:
@@ -164,52 +184,52 @@ services:
           aliases:
             - phpfpm
 
-    sogo-mailcow:
-      image: mailcow/sogo:1.106
-      environment:
-        - DBNAME=${DBNAME}
-        - DBUSER=${DBUSER}
-        - DBPASS=${DBPASS}
-        - TZ=${TZ}
-        - LOG_LINES=${LOG_LINES:-9999}
-        - MAILCOW_HOSTNAME=${MAILCOW_HOSTNAME}
-        - MAILCOW_PASS_SCHEME=${MAILCOW_PASS_SCHEME:-BLF-CRYPT}
-        - ACL_ANYONE=${ACL_ANYONE:-disallow}
-        - ALLOW_ADMIN_EMAIL_LOGIN=${ALLOW_ADMIN_EMAIL_LOGIN:-n}
-        - IPV4_NETWORK=${IPV4_NETWORK:-172.22.1}
-        - SOGO_EXPIRE_SESSION=${SOGO_EXPIRE_SESSION:-480}
-        - SKIP_SOGO=${SKIP_SOGO:-n}
-        - MASTER=${MASTER:-y}
-        - REDIS_SLAVEOF_IP=${REDIS_SLAVEOF_IP:-}
-        - REDIS_SLAVEOF_PORT=${REDIS_SLAVEOF_PORT:-}
-      dns:
-        - ${IPV4_NETWORK:-172.22.1}.254
-      volumes:
-        - ./data/hooks/sogo:/hooks:Z
-        - ./data/conf/sogo/:/etc/sogo/:z
-        - ./data/web/inc/init_db.inc.php:/init_db.inc.php:Z
-        - ./data/conf/sogo/custom-favicon.ico:/usr/lib/GNUstep/SOGo/WebServerResources/img/sogo.ico:z
-        - ./data/conf/sogo/custom-theme.js:/usr/lib/GNUstep/SOGo/WebServerResources/js/theme.js:z
-        - ./data/conf/sogo/custom-sogo.js:/usr/lib/GNUstep/SOGo/WebServerResources/js/custom-sogo.js:z
-        - mysql-socket-vol-1:/var/run/mysqld/:z
-        - sogo-web-vol-1:/sogo_web:z
-        - sogo-userdata-backup-vol-1:/sogo_backup:Z
-      labels:
-        ofelia.enabled: "true"
-        ofelia.job-exec.sogo_sessions.schedule: "@every 1m"
-        ofelia.job-exec.sogo_sessions.command: "/bin/bash -c \"[[ $${MASTER} == y ]] && /usr/local/bin/gosu sogo /usr/sbin/sogo-tool expire-sessions $${SOGO_EXPIRE_SESSION} || exit 0\""
-        ofelia.job-exec.sogo_ealarms.schedule: "@every 1m"
-        ofelia.job-exec.sogo_ealarms.command: "/bin/bash -c \"[[ $${MASTER} == y ]] && /usr/local/bin/gosu sogo /usr/sbin/sogo-ealarms-notify -p /etc/sogo/sieve.creds || exit 0\""
-        ofelia.job-exec.sogo_eautoreply.schedule: "@every 5m"
-        ofelia.job-exec.sogo_eautoreply.command: "/bin/bash -c \"[[ $${MASTER} == y ]] && /usr/local/bin/gosu sogo /usr/sbin/sogo-tool update-autoreply -p /etc/sogo/sieve.creds || exit 0\""
-        ofelia.job-exec.sogo_backup.schedule: "@every 24h"
-        ofelia.job-exec.sogo_backup.command: "/bin/bash -c \"[[ $${MASTER} == y ]] && /usr/local/bin/gosu sogo /usr/sbin/sogo-tool backup /sogo_backup ALL || exit 0\""
-      restart: always
-      networks:
-        mailcow-network:
-          ipv4_address: ${IPV4_NETWORK:-172.22.1}.248
-          aliases:
-            - sogo
+    #sogo-mailcow:
+      #image: mailcow/sogo:1.106
+      #environment:
+      #  - DBNAME=${DBNAME}
+      #  - DBUSER=${DBUSER}
+      #  - DBPASS=${DBPASS}
+      #  - TZ=${TZ}
+      #  - LOG_LINES=${LOG_LINES:-9999}
+      #  - MAILCOW_HOSTNAME=${MAILCOW_HOSTNAME}
+      #  - MAILCOW_PASS_SCHEME=${MAILCOW_PASS_SCHEME:-BLF-CRYPT}
+      #  - ACL_ANYONE=${ACL_ANYONE:-disallow}
+      #  - ALLOW_ADMIN_EMAIL_LOGIN=${ALLOW_ADMIN_EMAIL_LOGIN:-n}
+      #  - IPV4_NETWORK=${IPV4_NETWORK:-172.22.1}
+      #  - SOGO_EXPIRE_SESSION=${SOGO_EXPIRE_SESSION:-480}
+      #  - SKIP_SOGO=${SKIP_SOGO:-n}
+      #  - MASTER=${MASTER:-y}
+      #  - REDIS_SLAVEOF_IP=${REDIS_SLAVEOF_IP:-}
+      #  - REDIS_SLAVEOF_PORT=${REDIS_SLAVEOF_PORT:-}
+      #dns:
+        #- ${IPV4_NETWORK:-172.22.1}.254
+      #volumes:
+        #- ./data/hooks/sogo:/hooks:Z
+        #- ./data/conf/sogo/:/etc/sogo/:z
+        #- ./data/web/inc/init_db.inc.php:/init_db.inc.php:Z
+        #- ./data/conf/sogo/custom-favicon.ico:/usr/lib/GNUstep/SOGo/WebServerResources/img/sogo.ico:z
+        #- ./data/conf/sogo/custom-theme.js:/usr/lib/GNUstep/SOGo/WebServerResources/js/theme.js:z
+        #- ./data/conf/sogo/custom-sogo.js:/usr/lib/GNUstep/SOGo/WebServerResources/js/custom-sogo.js:z
+        #- mysql-socket-vol-1:/var/run/mysqld/:z
+        #- sogo-web-vol-1:/sogo_web:z
+        #- sogo-userdata-backup-vol-1:/sogo_backup:Z
+      #labels:
+        #ofelia.enabled: "true"
+        #ofelia.job-exec.sogo_sessions.schedule: "@every 1m"
+        #ofelia.job-exec.sogo_sessions.command: "/bin/bash -c \"[[ $${MASTER} == y ]] && /usr/local/bin/gosu sogo /usr/sbin/sogo-tool expire-sessions $${SOGO_EXPIRE_SESSION} || exit 0\""
+        #ofelia.job-exec.sogo_ealarms.schedule: "@every 1m"
+        #ofelia.job-exec.sogo_ealarms.command: "/bin/bash -c \"[[ $${MASTER} == y ]] && /usr/local/bin/gosu sogo /usr/sbin/sogo-ealarms-notify -p /etc/sogo/sieve.creds || exit 0\""
+        #ofelia.job-exec.sogo_eautoreply.schedule: "@every 5m"
+        #ofelia.job-exec.sogo_eautoreply.command: "/bin/bash -c \"[[ $${MASTER} == y ]] && /usr/local/bin/gosu sogo /usr/sbin/sogo-tool update-autoreply -p /etc/sogo/sieve.creds || exit 0\""
+        #ofelia.job-exec.sogo_backup.schedule: "@every 24h"
+        #ofelia.job-exec.sogo_backup.command: "/bin/bash -c \"[[ $${MASTER} == y ]] && /usr/local/bin/gosu sogo /usr/sbin/sogo-tool backup /sogo_backup ALL || exit 0\""
+      #restart: always
+      #networks:
+        #mailcow-network:
+          #ipv4_address: ${IPV4_NETWORK:-172.22.1}.248
+          #aliases:
+            #- sogo
 
     dovecot-mailcow:
       image: mailcow/dovecot:1.161
@@ -339,7 +359,7 @@ services:
 
     nginx-mailcow:
       depends_on:
-        - sogo-mailcow
+        #- sogo-mailcow
         - php-fpm-mailcow
         - redis-mailcow
       image: nginx:mainline-alpine
@@ -426,7 +446,7 @@ services:
       depends_on:
         - dovecot-mailcow
         - postfix-mailcow
-        - sogo-mailcow
+        #- sogo-mailcow
         - php-fpm-mailcow
         - redis-mailcow
       restart: always
@@ -564,7 +584,7 @@ services:
       environment:
         - TZ=${TZ}
       depends_on:
-        - sogo-mailcow
+        #- sogo-mailcow
         - dovecot-mailcow
       labels:
         ofelia.enabled: "true"
@@ -585,7 +605,7 @@ services:
         - clamd-mailcow
         - rspamd-mailcow
         - php-fpm-mailcow
-        - sogo-mailcow
+        #- sogo-mailcow
         - dovecot-mailcow
         - postfix-mailcow
         - memcached-mailcow

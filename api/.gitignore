@@ -1,0 +1,6 @@
+vendor
+build/*
+test.go
+.idea
+tmp
+test.go
